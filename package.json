@@ -1,0 +1,11 @@
+{
+  "name": "modular_server",
+  "type": "module",
+  "scripts": {
+    "start": "node main.js",
+    "start:port": "node main.js $PORT"
+  },
+  "dependencies": {
+    "ws": "^8.19.0"
+  }
+}
