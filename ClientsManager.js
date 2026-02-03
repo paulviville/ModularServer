@@ -10,10 +10,11 @@ export default class ClientsManager {
 	}
 
 	createClient ( clientUUID ) {
-        console.log( `ClientsManager - createClient` );
+        console.log( `ClientsManager - createClient ${ clientUUID }` );
 
 		const client = new Client( clientUUID );
 		this.#clients.set( clientUUID, client );
+		console.log(this.#clients)
 
 		return client;
 	}
@@ -22,6 +23,13 @@ export default class ClientsManager {
         console.log( `ClientsManager - deleteClient ${ uuid }` );
 
 		this.#clients.delete ( uuid );
+	}
+
+	getClient ( uuid ) {
+        console.log( `ClientsManager - getClient ${ uuid }` );
+		console.log(this.#clients)
+		console.log(this.#clients.get( uuid ))
+		return this.#clients.get( uuid );
 	}
 
 	forEach ( callback ) {

@@ -49,6 +49,8 @@ export default class ServerNetwork {
 				
 				socket.on('message', ( message ) => { this.#handleMessage( uuid, message ); });
 				socket.on('close', ( ) => { this.#handleClose( uuid ); });
+
+				this.#handleNewClient( uuid );
 			}
 			else {
 				console.log( "client failed to identify ");
@@ -72,6 +74,26 @@ export default class ServerNetwork {
 			this.#broadcast( JSON.stringify( messageData ), messageData.senderUUID );
 
 		}
+	}
+
+	#handleNewClient ( clientUUID ) {
+        console.log(`ServerNetwork - #handleNewClient ${ clientUUID }`);
+
+		console.log(this.#moduleManager.state)
+		const state = this.#moduleManager.state;
+		const messageData = {
+			senderUUID: this.#uuid,
+			scope: "MODULE",
+			data: {
+				moduleUUID: this.#moduleManager.uuid,
+				message: {
+					command: "SET_STATE",
+					data: state,	
+				}
+			}
+		}
+
+		this.#send( clientUUID, JSON.stringify( messageData ) );
 	}
 
 	#handleClose( clientUUID ) {
@@ -105,7 +127,17 @@ export default class ServerNetwork {
 		} );
 	}
 
+	#send ( clientUUID, message ) {
+        console.log(`ServerNetwork - #send ${ clientUUID }`);
 
+		const client = this.#clientsManager.getClient( clientUUID );
+		client.socket.send( message );
+	}
+
+
+
+
+	/// module bus stuff
 	send ( moduleUUID, message ) {
 		console.log( `ClientNetwork - send` );
 		console.log ( moduleUUID, message );

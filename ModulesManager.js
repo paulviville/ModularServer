@@ -2,25 +2,23 @@ import ModuleCore from "./ModuleCore.js";
 import ModuleTypes from "./ModuleTypes.js";
 
 const commands = {
+	setState: "SET_STATE",
 	addModule: "ADD_MODULE",
 	removeModule: "REMOVE_MODULE",
 }
 
 export default class ModulesManager extends ModuleCore {
 	#modules = new Map ( );
-	#network;
+	#outputFn;
 
-	constructor ( network ) {
+	constructor ( network, outputFn ) {
 		console.log( `ModulesManager - constructor` );
 
 		const uuid = "00000000-0000-0000-0000-000000000000";
 		super ( uuid, "ModulesManager" );
 
-		this.#network = network;
-		this.emitter = network;
-
-		this.addCommand( commands.addModule );
-		this.addCommand( commands.removeModule );
+		this.#outputFn = outputFn;
+		this.setOutputFn( outputFn );
 
 		this.addHandler( commands.addModule, ( data ) => this.onAddModule( data ) );
 		this.addHandler( commands.removeModule, ( data ) => this.onRemoveModule( data ) );
@@ -53,9 +51,12 @@ export default class ModulesManager extends ModuleCore {
 		const constructor = ModuleTypes[ type ];
 		/// check if constuctor undefined
 		const module = new constructor( uuid );
+		module.setOutputFn( this.#outputFn );
 
 		/// if uuid is undefined, module.uuid isn't
 		this.#modules.set( module.uuid, module );
+		console.log(this.#modules)
+
 
 		if ( sync ) {
 			this.ouput( commands.addModule, { type: type, uuid: module.uuid } );
@@ -83,5 +84,27 @@ export default class ModulesManager extends ModuleCore {
 
 	get modulesList ( ) {
 		return [ ...this.#modules.keys( ) ];
+	}
+
+	get state ( ) {
+		const modulesData = [];
+		for ( const [uuid, module] of this.#modules ) {
+			if ( module.type == "ModulesManager" ) 
+				continue;
+
+			modulesData.push( { uuid, type: module.type } );
+		}
+
+		return {
+			modules: modulesData
+		}
+	}
+
+	set state ( state ) {
+		console.log( state );
+		for( const moduleInfo of state.modules ) {
+			console.log( moduleInfo.uuid, moduleInfo.type );
+			this.addModule( moduleInfo.type, moduleInfo.uuid );
+		}
 	}
 }
