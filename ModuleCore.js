@@ -36,7 +36,7 @@ export default class ModuleCore {
 	}
 
 	onChange ( ) {
-		this.#onChangeFn( );
+		this.#onChangeFn?.( );
 	}
 
 	addHandler ( command, handler ) {
