@@ -5,8 +5,10 @@ const commands = {
 export default class ModuleCore {
 	#type;
 	#uuid;
+	#ownerUUID;
 	#emit;
 	#onChangeFn;
+	#onDeleteFn;
 
 	// #needsUpdate = false;
 	#handlers = new Map( );
@@ -25,6 +27,14 @@ export default class ModuleCore {
 		return this.#uuid;
 	}
 
+	get ownerUUID ( ) {
+		return this.#ownerUUID;
+	}
+
+	set ownerUUID ( ownerUUID ) {
+		this.#ownerUUID = ownerUUID;
+	}
+
 	setOutputFn ( outputFn ) {
 		this.#emit = ( message ) => {
 			outputFn( this.#uuid, message );
@@ -33,6 +43,10 @@ export default class ModuleCore {
 
 	setOnChange ( onChangeFn ) {
 		this.#onChangeFn = onChangeFn;
+	}
+
+	setOnDelete ( onDeleteFn ) {
+		this.#onDeleteFn = onDeleteFn;
 	}
 
 	onChange ( ) {
@@ -54,9 +68,7 @@ export default class ModuleCore {
 	input ( message ) {
 		console.log( `ModuleCore - input` );
 		
-		// console.log(message)
 		const { command, data } = this.decode( message );
-		// console.log( command, data );
 
 		if ( !this.#handlers.has( command ) ) {
 			console.warn( `${ this.#type } - ${ this.uuid }  - has no handler for ${ command }`);
@@ -94,20 +106,28 @@ export default class ModuleCore {
 		return;
 	}
 
-	/// overload in children
+	stateCommand ( ) {
+		return this.encode ( 
+			"SET_STATE",
+			this.state
+		);
+	}
+
+	/// overload in children 
+	/// PLACEHOLDER FOR SWITCH TO BUFFERS
 	encode ( command, data ) { 
-		const message = { command, data };
+		const message = { command, data: data };
 		return message;
 	}
 
 	/// overload in children
+	/// PLACEHOLDER FOR SWITCH TO BUFFERS
 	decode ( message ) {
 		console.log(message)
 		return message;
 	}
 
-	/// overload in children
 	delete ( ) {
-		/// freeing logic
+		this.#onDeleteFn?.( );
 	};
 }

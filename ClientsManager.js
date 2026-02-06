@@ -14,7 +14,6 @@ export default class ClientsManager {
 
 		const client = new Client( clientUUID );
 		this.#clients.set( clientUUID, client );
-		console.log(this.#clients)
 
 		return client;
 	}

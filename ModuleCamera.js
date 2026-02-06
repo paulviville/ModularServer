@@ -44,6 +44,7 @@ export default class ModuleCamera extends ModuleCore {
 	set state ( stateData ) {
 		console.log( stateData );
 
-		this.#data.matrix = [ ...stateData.matrix ];
+		const { matrix } = stateData;
+		this.updateCamera( matrix );
 	}
 }

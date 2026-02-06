@@ -17,7 +17,7 @@ export default class ServerNetwork {
 	#sockets = new Set( );
 	#clientsManager = new ClientsManager( );
 	// #instance = new Instance( );
-	#moduleManager = new ModulesManager( this );
+	#moduleManager = new ModulesManager( this, this.send.bind( this ) );
 
 	constructor ( port ) {
 		console.log(`ServerNetwork - constructor (${port})`);
@@ -29,6 +29,20 @@ export default class ServerNetwork {
 
 		process.on('SIGINT', ( ) => { this.#handleShutdown( ); })
 		process.on('SIGTERM', ( ) => { this.#handleShutdown( ); })
+
+		this.#moduleManager.setModuleProcessing(
+			( module ) => {
+       			console.log(`adding module owned by ${ module.ownerUUID }`);
+				const client = this.#clientsManager.getClient( module.ownerUUID );
+				client.addModule( module.uuid );
+			},
+			( module ) => {
+       			console.log(`removing module owned by ${ module.ownerUUID }`);
+
+				const client = this.#clientsManager.getClient( module.ownerUUID );
+				client.removeModule( module.uuid );
+			}
+		);
 	}
 
 	#handleConnection ( socket ) {
@@ -79,28 +93,82 @@ export default class ServerNetwork {
 	#handleNewClient ( clientUUID ) {
         console.log(`ServerNetwork - #handleNewClient ${ clientUUID }`);
 
-		console.log(this.#moduleManager.state)
-		const state = this.#moduleManager.state;
+		// console.log(this.#moduleManager.state)
+		// const state = this.#moduleManager.state;
+		// const messageData = {
+		// 	senderUUID: this.#uuid,
+		// 	scope: "MODULE",
+		// 	data: {
+		// 		moduleUUID: this.#moduleManager.uuid,
+		// 		message: {
+		// 			command: "SET_STATE",
+		// 			data: state,	
+		// 		}
+		// 	}
+		// }
+
+		// this.#send( clientUUID, JSON.stringify( messageData ) );
+
+
+		const stateData = this.#moduleManager.stateCommand( );
+		console.log(stateData)
 		const messageData = {
 			senderUUID: this.#uuid,
 			scope: "MODULE",
 			data: {
 				moduleUUID: this.#moduleManager.uuid,
-				message: {
-					command: "SET_STATE",
-					data: state,	
-				}
+				message: stateData,
 			}
 		}
-
 		this.#send( clientUUID, JSON.stringify( messageData ) );
+
+		for ( const [ moduleUUID, module ] of this.#moduleManager.modules ) {
+			console.log(moduleUUID, module)
+			if ( moduleUUID == this.#moduleManager.uuid ) {
+				continue; 
+			}
+			const messageData = {
+				senderUUID: this.#uuid,
+				scope: "MODULE",
+				data: {
+					moduleUUID: moduleUUID,
+					message: module.stateCommand( ),
+				}
+			}
+
+			this.#send( clientUUID, JSON.stringify( messageData ) );
+		}
+
+		// send ( moduleUUID, message )
+		// console.log( `ClientNetwork - send` );
+		// console.log ( moduleUUID, message );
+		
+		// const networkMessage = {
+		// 	senderUUID: this.#uuid,
+		// 	scope: "MODULE",
+		// 	data: {
+		// 		moduleUUID,
+		// 		message,
+		// 	}
+		// }
+		
+		// this.#broadcast( JSON.stringify( networkMessage ) );
+
 	}
 
 	#handleClose( clientUUID ) {
         console.log(`ServerNetwork - #handleClose ${ clientUUID }`);
 
+		const client = this.#clientsManager.getClient( clientUUID );
+		for ( const moduleUUID of client.moduleUUIDs ) {
+			this.#moduleManager.removeModule( moduleUUID, true );
+		}
+		// console.log( "client: ", client )
+		// console.log( "clientUUID:", client.moduleUUIDs )
+
 		/// Add timeout + callback for deletion, enables reconnection.
 		this.#clientsManager.deleteClient( clientUUID );
+
 
 
 		// const message = Messages.removeUser(clientId);

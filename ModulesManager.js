@@ -10,6 +10,9 @@ const commands = {
 export default class ModulesManager extends ModuleCore {
 	#modules = new Map ( );
 	#outputFn;
+	#onAddFn;
+	#onRemoveFn;
+
 
 	constructor ( network, outputFn ) {
 		console.log( `ModulesManager - constructor` );
@@ -25,15 +28,15 @@ export default class ModulesManager extends ModuleCore {
 
 
 
-		this.#modules.set( uuid, this );
+		this.#modules.set( uuid, this ); /// useless? maybe remove
 	}
 
 	onAddModule ( data ) {
 		console.log( `ModulesManager - onAddModule` );
 
 		console.log( data );
-		const { type, uuid, ...moduleData } = data;
-		this.addModule( type, uuid );
+		const { type, uuid, ownerUUID, ...moduleData } = data;
+		this.addModule( type, uuid, false, ownerUUID );
 	}
 
 	onRemoveModule ( data ) {
@@ -45,7 +48,7 @@ export default class ModulesManager extends ModuleCore {
 		this.removeModule( uuid )
 	}
 
-	addModule ( type, uuid, sync = false ) { 
+	addModule ( type, uuid, sync = false, ownerUUID ) { 
 		console.log( `ModulesManager - addModule` );
 
 		const constructor = ModuleTypes[ type ];
@@ -56,11 +59,14 @@ export default class ModulesManager extends ModuleCore {
 		/// if uuid is undefined, module.uuid isn't
 		this.#modules.set( module.uuid, module );
 		console.log(this.#modules)
-
+		console.log( ownerUUID );
+		module.ownerUUID = ownerUUID;
 
 		if ( sync ) {
-			this.ouput( commands.addModule, { type: type, uuid: module.uuid } );
+			this.ouput( commands.addModule, { type: type, uuid: module.uuid, ownerUUID: ownerUUID } );
 		}
+
+		this.#onAddFn?.( module );
 	}
 
 	removeModule ( uuid, sync = false ) {
@@ -68,6 +74,10 @@ export default class ModulesManager extends ModuleCore {
 
 		if ( this.#modules.has( uuid ) ) {
 			const module = this.#modules.get( uuid );
+
+			this.#onRemoveFn?.( module );
+
+
 			module.delete( );
 
 			this.#modules.delete( uuid );
@@ -76,6 +86,13 @@ export default class ModulesManager extends ModuleCore {
 				this.ouput( commands.removeModule, { uuid: uuid } );
 			}
 		}
+	}
+
+	setModuleProcessing ( onAddFn, onRemoveFn ) {
+		console.log( `ModulesManager - setModuleProcessing` );
+
+		this.#onAddFn = onAddFn;
+		this.#onRemoveFn = onRemoveFn;
 	}
 
 	get modules ( ) {
