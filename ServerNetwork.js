@@ -33,6 +33,8 @@ export default class ServerNetwork {
 		this.#moduleManager.setModuleProcessing(
 			( module ) => {
        			console.log(`adding module owned by ${ module.ownerUUID }`);
+				if ( module.ownerUUID === undefined ) 
+					return;
 				const client = this.#clientsManager.getClient( module.ownerUUID );
 				client.addModule( module.uuid );
 			},
